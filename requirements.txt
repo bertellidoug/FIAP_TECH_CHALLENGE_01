@@ -1,0 +1,11 @@
+# Scraping
+requests
+beautifulsoup4
+pandas
+
+# API
+fastapi
+uvicorn[standard]
+
+# Swagger
+pydantic
