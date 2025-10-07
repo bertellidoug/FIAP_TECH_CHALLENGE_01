@@ -21,6 +21,19 @@ def checkCacheFile() -> bool:
         
     return False
 
+def getLatestCSV():
+    
+    CSV_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    CSV_FILE = os.path.join(CSV_DIR, "data")
+
+    csvFile = glob.glob(os.path.join(CSV_DIR, "books_*.csv"))
+
+    if not csvFile:
+        raise FileNotFoundError("Nenhum arquivo CSV encontrado na pasta \data")
+    
+    latestFile = max(csvFile, key=os.path.getctime)
+    return latestFile
+
 #   check if CSV exists 
 if checkCacheFile():
     exit()
