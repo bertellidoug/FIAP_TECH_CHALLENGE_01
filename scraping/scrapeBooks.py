@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import glob, os, time
 import csv
+from urllib.parse import urljoin
 from datetime import datetime
 
 def checkCacheFile() -> bool:
@@ -23,10 +24,16 @@ def checkCacheFile() -> bool:
 
 def getLatestCSV():
     
-    CSV_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    CSV_FILE = os.path.join(CSV_DIR, "data")
+    print(f"passo: 10: {__file__}")
 
-    csvFile = glob.glob(os.path.join(CSV_DIR, "books_*.csv"))
+    CSV_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    print(f"passo 20: {CSV_DIR}")
+
+    CSV_FILE = os.path.join(CSV_DIR, "data")
+    print(f"passo 30: {CSV_FILE}")
+
+    csvFile = glob.glob(os.path.join(CSV_FILE, "books_*.csv"))
+    print(f"passo 40: {csvFile}")
 
     if not csvFile:
         raise FileNotFoundError("Nenhum arquivo CSV encontrado na pasta \data")
@@ -34,62 +41,85 @@ def getLatestCSV():
     latestFile = max(csvFile, key=os.path.getctime)
     return latestFile
 
-#   check if CSV exists 
-if checkCacheFile():
-    exit()
+def runScraping():
 
-#   create the file name
-numPage = 0
-timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-fileName = f"./data/books_{timestamp}.csv"
+    #   check if CSV exists 
+    if checkCacheFile():
+        exit()
 
-print(f"Arquivo criado: {fileName}")
+    #   create the file name
+    numPage = 0
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    fileName = f"./data/books_{timestamp}.csv"
 
-#   initial url of the website
-BASE_URL = "https://books.toscrape.com/catalogue/page-{}.html"
+    print(f"Arquivo criado: {fileName}")
 
-#   list to store the data
-obj_data = []
+    #   initial url of the website
+    BASE_URL = "https://books.toscrape.com/catalogue/page-{}.html"
+    BASE_BASE = "https://books.toscrape.com/"
+    BASE_CATOLOGUE = "https://books.toscrape.com/catalogue/"
 
-#   number of pages to scrap (has 50 pages)
-NUM_PAGES = 50
+    #   list to store the data
+    obj_data = []
 
-#   open csv in write mode and add header
-with open(fileName, mode="w", newline="", encoding="utf-8-sig") as file:
-    writer = csv.writer(file)
-    writer.writerow(["NumPage", "Title", "Price", "Stock", "Rating"])
+    #   number of pages to scrap (has 50 pages)
+    NUM_PAGES = 50
 
-    for page in range(1, NUM_PAGES + 1):
+    #   open csv in write mode and add header
+    with open(fileName, mode="w", newline="", encoding="utf-8-sig") as file:
+        writer = csv.writer(file)
+        writer.writerow(["NumPage", "Title", "Price", "Rating", "Stock", "Category", "Image"])
 
-        print(f"Reading page {page}")
+        for page in range(1, NUM_PAGES + 1):
 
-        url = BASE_URL.format(page)
+            print(f"Reading page {page}")
 
-        response = requests.get(url)
-        response.encoding = "utf-8"
+            url = BASE_URL.format(page)
 
-        if response.status_code != 200:
-            print(f"Erro ao acessar página {page}")
-            continue
+            response = requests.get(url)
+            response.encoding = "utf-8"
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        books = soup.find_all("article", class_="product_pod")
+            if response.status_code != 200:
+                print(f"Erro ao acessar página {page}")
+                continue
 
-        for book in books:
-            numPage = 0
-            title = book.h3.a["title"]
-            price = book.find("p", class_="price_color").text.strip()
-            stock = book.find("p", class_="instock availability").text.strip()
-            rating = book.p["class"][1]
+            soup = BeautifulSoup(response.text, "html.parser")
+            books = soup.find_all("article", class_="product_pod")
 
-            obj_data.append({
-                "NumPage":page,
-                "Title": title,
-                "Price": price,
-                "Stock": stock,
-                "Rating": rating
-            })
+            for book in books:
 
-            writer.writerow([page, title, price, stock, rating])
+                numPage = 0
+                title = book.h3.a["title"]
+                price = book.find("p", class_="price_color").text.strip()
+                rating = book.p["class"][1]
+                stock = book.find("p", class_="instock availability").text.strip()
 
-print(f"Script finalizado.")
+                image_url = book.find("img")["src"].replace("../../", BASE_BASE)
+                image = image_url
+
+                href = book.h3.a["href"]  # ex: "../../../a-light-in-the-attic_1000/index.html"
+                
+                detail_url = urljoin(url, href)  # monta a URL absoluta corretamente
+                detail_resp = requests.get(detail_url)
+                detail_resp.raise_for_status()
+                detail_soup = BeautifulSoup(detail_resp.text, "html.parser")
+
+                category = detail_soup.find("ul", class_="breadcrumb").find_all("a")[2].text.strip()
+
+                obj_data.append({
+                    "NumPage":page,
+                    "Title": title,
+                    "Price": price,
+                    "Stock": stock,
+                    "Rating": rating,
+                    "Stock": stock,
+                    "Category": category,
+                    "Image": image
+                })
+
+                writer.writerow([page, title, price, stock, rating, stock, category, image])
+
+    print(f"Script finalizado.")
+
+if __name__ == "__main__":
+    runScraping()
