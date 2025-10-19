@@ -86,9 +86,7 @@ def healthCheck():
     """Check if the API is working and can access the data"""
     return JSONResponse(content={
 
-        "status": "ok",
-        "records": len(df),
-        "csv_path": CSV_PATH
+        "status": "ok"
     })
 
 @router.post("/scraping/trigger", summary="Dispara scraping (protegido)", status_code=status.HTTP_202_ACCEPTED)
