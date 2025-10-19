@@ -58,7 +58,7 @@ def runScraping():
     obj_data = []
 
     #   number of pages to scrap (has 50 pages)
-    NUM_PAGES = 2
+    NUM_PAGES = 50
 
     #   open csv in write mode and add header
     with open(fileName, mode="w", newline="", encoding="utf-8-sig") as file:
