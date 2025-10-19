@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
@@ -14,7 +14,7 @@ fake_user = {
     "password": "123456"
 }
 
-def getCurrentUser(token: str = Depends(oauth2_scheme)):
+def getCurrentUser(token: str = Header(...)):
 
     """Validate the token JWT and return the authenticated user"""
     credentials_exception = HTTPException(

@@ -1,6 +1,6 @@
 import threading
 import time
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, status
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
@@ -91,9 +91,12 @@ def healthCheck():
         "csv_path": CSV_PATH
     })
 
-@router.post("/scraping/trigger", summary="Dispara scraping (protegido)")
+@router.post("/scraping/trigger", summary="Dispara scraping (protegido)", status_code=status.HTTP_202_ACCEPTED)
 def triggerScraping(user: str = Depends(getCurrentUser)):
     
+    if scraping_status["running"]:
+        return {"message": f"Scraping já em execução pelo {user}"}
+
     """Authenticated async execution to load the database via web scraping"""
     thread = threading.Thread(target=scrapingTask)
     thread.start()
@@ -101,5 +104,41 @@ def triggerScraping(user: str = Depends(getCurrentUser)):
     return {"message": f"Scraping iniciado pelo {user}. Favor aguardar alguns minutos"}
 
 def scrapingTask():
-    #time.sleep(3) -> we shoud use this, when we want to run tests.
-    scrapeBooks.runScraping()
+
+    try:
+        scraping_status["running"] = True
+        scraping_status["success"] = None
+
+        #time.sleep(3) -> we shoud use this, when we want to run tests.
+
+        # call the real scraping
+        scrapeBooks.runScraping()
+
+        scraping_status["success"] = True
+
+    except Exception as e:
+
+        scraping_status["success"] = False
+        print("Erro no scraping:", e)
+    finally:
+        scraping_status["running"] = False
+
+@router.get("/scraping/status", summary="Status do scraping")
+def scrapingStatus():
+
+    if scraping_status["running"]:
+        return {"status": "em processamento"}
+    
+    if scraping_status["success"] is True:
+        return {"status": "finalizado com sucesso"}
+    
+    if scraping_status["success"] is False:
+        return {"status": "erro no scraping"}
+    
+    return {"status": "parado"}
+
+
+scraping_status = {
+    "running": False,
+    "success": None  # True, False = error, None = not started
+}
