@@ -24,16 +24,11 @@ def checkCacheFile() -> bool:
 
 def getLatestCSV():
     
-    print(f"passo: 10: {__file__}")
-
     CSV_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    print(f"passo 20: {CSV_DIR}")
 
     CSV_FILE = os.path.join(CSV_DIR, "data")
-    print(f"passo 30: {CSV_FILE}")
 
     csvFile = glob.glob(os.path.join(CSV_FILE, "books_*.csv"))
-    print(f"passo 40: {csvFile}")
 
     if not csvFile:
         raise FileNotFoundError("Nenhum arquivo CSV encontrado na pasta \data")
@@ -67,8 +62,10 @@ def runScraping():
 
     #   open csv in write mode and add header
     with open(fileName, mode="w", newline="", encoding="utf-8-sig") as file:
+
         writer = csv.writer(file)
-        writer.writerow(["NumPage", "Title", "Price", "Rating", "Stock", "Category", "Image"])
+        next_id = 1
+        writer.writerow(["NumPage", "ID", "Title", "Price", "Rating", "Stock", "Category", "Image"])
 
         for page in range(1, NUM_PAGES + 1):
 
@@ -88,7 +85,7 @@ def runScraping():
 
             for book in books:
 
-                numPage = 0
+                bookID = next_id
                 title = book.h3.a["title"]
                 price = book.find("p", class_="price_color").text.strip()
                 rating = book.p["class"][1]
@@ -106,18 +103,8 @@ def runScraping():
 
                 category = detail_soup.find("ul", class_="breadcrumb").find_all("a")[2].text.strip()
 
-                obj_data.append({
-                    "NumPage":page,
-                    "Title": title,
-                    "Price": price,
-                    "Stock": stock,
-                    "Rating": rating,
-                    "Stock": stock,
-                    "Category": category,
-                    "Image": image
-                })
-
-                writer.writerow([page, title, price, stock, rating, stock, category, image])
+                writer.writerow([page, bookID, title, price, rating, stock, category, image])
+                next_id += 1
 
     print(f"Script finalizado.")
 

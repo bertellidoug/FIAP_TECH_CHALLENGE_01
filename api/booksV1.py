@@ -24,8 +24,6 @@ def loadData():
         raise FileNotFoundError(f"Arquivo não encontrado. {CSV_PATH}")
 
     df = pd.read_csv(CSV_PATH)
-    df["id"] = df.index + 1
-    df["category"] = df["NumPage"].apply(lambda p: f"Categoria {p}")
 
     return df
 
@@ -65,7 +63,7 @@ def searchBooks(title: str = Query(None, description="Título parcial ou complet
 def getBook(bookID: int):
 
     """Get a specific book by ID"""
-    book = df[df["id"] == bookID]
+    book = df[df["ID"] == bookID]
     if book.empty:
         raise HTTPException(status_code=404, detail="Livro não encontrado")
     
