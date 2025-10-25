@@ -36,7 +36,7 @@ print(len(df))
 @router.get("/books", summary="Lista de todos os livros")
 def getBooks():
 
-    """Get all books from the database"""
+    """Retornar todos os livros da base"""
     return df.to_dict(orient="records")
 
 #----------------------------
@@ -44,7 +44,7 @@ def getBooks():
 def searchBooks(title: str = Query(None, description="Título parcial ou completo"),
                  category: str = Query(None, description="Categoria do livro")):
     
-    """Get books filtered by title and/or category"""
+    """Retornar livros por filtro e/ou categoria"""
     results = df.copy()
 
     if title:
@@ -62,7 +62,7 @@ def searchBooks(title: str = Query(None, description="Título parcial ou complet
 @router.get("/books/{bookID}", summary="Detalhes de um livro específico")
 def getBook(bookID: int):
 
-    """Get a specific book by ID"""
+    """Retornar um livro especifico por ID"""
     book = df[df["ID"] == bookID]
     if book.empty:
         raise HTTPException(status_code=404, detail="Livro não encontrado")
@@ -73,7 +73,7 @@ def getBook(bookID: int):
 @router.get("/categories", summary="Lista todas as categorias")
 def getCategories():
 
-    """Return all unique categories from the database"""
+    """Retornar todas as categorias da base"""
     categories = sorted(df["Category"].unique().tolist())
     return {"categories": categories}
 
@@ -81,19 +81,18 @@ def getCategories():
 @router.get("/health", summary="Verifica status da API")
 def healthCheck():
 
-    """Check if the API is working and can access the data"""
+    """Verificar se a API está funcionando"""
     return JSONResponse(content={
 
         "status": "ok"
     })
 
-@router.post("/scraping/trigger", summary="Dispara scraping (protegido)", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/scraping/trigger", summary="Disparar scraping (seguro)", status_code=status.HTTP_202_ACCEPTED)
 def triggerScraping(user: str = Depends(getCurrentUser)):
     
     if scraping_status["running"]:
         return {"message": f"Scraping já em execução pelo {user}"}
 
-    """Authenticated async execution to load the database via web scraping"""
     thread = threading.Thread(target=scrapingTask)
     thread.start()
 
